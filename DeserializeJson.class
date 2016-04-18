@@ -1,0 +1,84 @@
+    /// <summary>
+    /// C#解析json字符窜
+    /// </summary>
+    public class DeserializeJson
+    {
+        private Dictionary<string, object> _all_keyVal = new Dictionary<string, object>();
+        
+        private static DeserializeJson _instance = null;
+        
+        private void GetElement(string key, object _DicData)
+        {
+            Dictionary<string, object> data = _DicData as Dictionary<string, object>;
+            if (null != data)
+            {
+                foreach (var item in data)
+                {
+                    string _type = item.Value.GetType().Name;
+                    string _newkey = key + "." + item.Key;
+                    if (_type == ("Dictionary`2"))
+                    {
+                        GetElement(_newkey.Trim('.'), item.Value);
+                    }
+                    else if (_type == ("ArrayList"))
+                    {
+                        System.Collections.ArrayList _array = item.Value as System.Collections.ArrayList;
+                        if (_array != null)
+                        {
+                            _all_keyVal.Add(_newkey.Trim('.') + ".length", _array.Count);
+                            int ind = 0;
+                            foreach (var itm in _array)
+                            {
+                                string __type = itm.GetType().Name;
+                                if (__type == ("Dictionary`2"))
+                                {
+                                    GetElement((_newkey + "." + ind++).Trim('.'), itm);
+                                }
+                                else
+                                {
+                                    _all_keyVal.Add((_newkey + "." + ind++).Trim('.'), itm);
+                                }
+                                //Response.Write(itm+"<br>");
+                            }
+                        }
+                    }
+                    else if (_type == "String" || _type == "Int32")
+                    {
+                        _all_keyVal.Add(_newkey.Trim('.'), item.Value);
+                        //Response.Write(item.Key + "-->" + item.Value + "<br>");
+                    }
+                    else
+                    {
+                        _all_keyVal.Add(_newkey.Trim('.'), item.Value);
+                        //Response.Write(item.Key + "-->" + item.Value + "<br>");
+                    }
+                }
+            }
+        }
+
+        public static DeserializeJson Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = new DeserializeJson();
+                }
+                return _instance;
+            }
+        }
+
+        public Dictionary<string, object> GetResult(string _jsonstring)
+        {
+            _all_keyVal = new Dictionary<string, object>();
+            _all_keyVal.Clear();
+            JavaScriptSerializer serializer = new JavaScriptSerializer();
+            Dictionary<string, object> result = (Dictionary<string, object>)serializer.Deserialize<Dictionary<string, object>>(_jsonstring);
+            GetElement(string.Empty, result);
+            return _all_keyVal;
+        }
+
+        //调用
+        //Dictionary<string, object> result = DeserializeJson.Instance.GetResult(str);
+        //Response.Write(result["business.base_info.telephone"]);
+    }
